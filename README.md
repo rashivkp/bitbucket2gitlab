@@ -1,3 +1,7 @@
+# IMPORTANT
+
+I've contributed the script in this repository to the Gitlab people who are now maintaining and improving the script as part of their [Gitlab Recipes](https://github.com/gitlabhq/gitlab-recipes) repository. You should be able to find it there in the import/bitbucket directory and you should probably be using their version.
+
 # bitbucket2gitlab
 
 At [Inbot](http://inbot.io) we recently set up our own Gitlab server and we needed to port our issues over from bitbucket. Since I could find no tool to do this, I hacked together a quick tool that gets the job done.
