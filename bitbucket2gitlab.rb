@@ -11,20 +11,24 @@ end
 
 def import(bitbucket_json)
   id_map={}
-  bitbucket_json['issues'].each do |issue|
-    issue_id=issue['id']
-    gitlab_id=post_issue(issue['title'],issue['content'])
+  issues_count=bitbucket_json['issues'].length
+  issue_id=1
+  while issue_id <= issues_count
+    issue=bitbucket_json['issues'].find{|h1| h1['id']==issue_id}
+    gitlab_id=post_issue(issue['title'],issue['content'], issue['status'])
     id_map[issue_id]=gitlab_id
-    if('resolved' == issue['status'])
+    if(['invalid', 'resolved', 'duplicate', 'wontfix', 'closed'].include? issue['status'])
       close_issue(gitlab_id)
     end
-  end
-  bitbucket_json['comments'].each do |comment|
-    if comment['content']
-      post_comment(id_map[comment['issue']],"#{comment['content']}\n\n#{comment['user']} - #{comment['created_on']}")
+    comments=bitbucket_json['comments'].select{|h1| h1['issue']==issue_id}
+    if comments.length
+      comments = comments.sort_by { |k| k["id"] }
+      comments.each do |comment|
+        post_comment(id_map[comment['issue']],"#{comment['content']}\n\n#{comment['user']} - #{comment['created_on']}")
+      end
     end
+    issue_id += 1
   end
-
 end
 
 def gitlab_key(email,password)
@@ -33,9 +37,10 @@ def gitlab_key(email,password)
   JSON.parse(res.body)['private_token']
 end
 
-def post_issue(title,description)
+def post_issue(title,description, status)
   uri = URI("#{@base_url}/api/v3/projects/#{@project}/issues")
-  res = Net::HTTP.post_form(uri, 'title' => title, 'description' => description, 'private_token' => @token, 'labels' => ['bitbucket2gitlab'])
+  labels = 'bitbucket2gitlab,'+status
+  res = Net::HTTP.post_form(uri, 'title' => title, 'description' => description, 'private_token' => @token, 'labels' => labels)
   created=JSON.parse(res.body)
   puts created.to_json
   created['id']
